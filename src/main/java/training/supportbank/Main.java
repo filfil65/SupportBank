@@ -13,11 +13,19 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+
 
 public class Main {
 	
@@ -49,6 +57,19 @@ public class Main {
                 .withIgnoreHeaderCase()
                 .withTrim());
         
+        
+// ~~~~~~~~~~~~~~~~~~~ JSON PARSING ~~~~~~~~~~~~~~~~~~~~~~~~~
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(LocalDate.class, (JsonDeserializer<LocalDate>) (jsonElement, type, jsonDeserializationContext) ->
+               // Convert jsonElement to a LocalDate here...
+        );
+        Gson gson = gsonBuilder.create();
+        
+        
+        JsonObject jsonObject = new JsonParser().parse("{\"name\": \"John\"}").getAsJsonObject();
+        System.out.println(jsonObject.get("name").getAsString()); //John
+        
+
         // Reading all records at once into memory
         //List<CSVRecord> csvRecords = csvParser.getRecords();
         //System.out.println(csvRecords);
