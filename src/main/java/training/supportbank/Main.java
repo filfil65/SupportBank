@@ -2,7 +2,9 @@ package training.supportbank;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.io.FileReader;
 import java.io.IOException; 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,6 +20,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -59,17 +62,21 @@ public class Main {
         
         
 // ~~~~~~~~~~~~~~~~~~~ JSON PARSING ~~~~~~~~~~~~~~~~~~~~~~~~~
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(LocalDate.class, (JsonDeserializer<LocalDate>) (jsonElement, type, jsonDeserializationContext) ->
-               // Convert jsonElement to a LocalDate here...
-        );
-        Gson gson = gsonBuilder.create();
-        
-        
-        JsonObject jsonObject = new JsonParser().parse("{\"name\": \"John\"}").getAsJsonObject();
-        System.out.println(jsonObject.get("name").getAsString()); //John
+//        GsonBuilder gsonBuilder = new GsonBuilder();
+//        gsonBuilder.registerTypeAdapter(LocalDate.class, (JsonDeserializer<LocalDate>) (jsonElement, type, jsonDeserializationContext) ->
+//               // Convert jsonElement to a LocalDate here...
+//        );
+//        Gson gson = gsonBuilder.create();
+//        
+//        
+//        JsonObject jsonObject = new JsonParser().parse("{\"name\": \"John\"}").getAsJsonObject();
+//        System.out.println(jsonObject.get("name").getAsString()); //John
         
 
+
+        
+        
+        
         // Reading all records at once into memory
         //List<CSVRecord> csvRecords = csvParser.getRecords();
         //System.out.println(csvRecords);
@@ -196,9 +203,57 @@ public class Main {
     			}
     		}
         } //End of While Loop
+        
+        JsonReader jsonReader = new JsonReader(new FileReader("jsonFile.json"));
+
+        jsonReader.beginObject();
+
+        while (jsonReader.hasNext()) {
+
+        	String name = jsonReader.nextName();
+        	if (name.equals("descriptor")) {
+        		readApp(jsonReader);
+
+        	}
+        }
+
+        jsonReader.endObject();
+        jsonReader.close();
     		
     }
     
 
+    // Have a sequence of objects
+    
+    
+    public static void readApp(JsonReader jsonReader) throws IOException{
+    	jsonReader.beginObject();
+    	while (jsonReader.hasNext()) {
+    		String name = jsonReader.nextName();
+    		System.out.println(name);
+    		if (name.contains("app")){
+    			jsonReader.beginObject();
+    			while (jsonReader.hasNext()) {
+    				String n = jsonReader.nextName();
+    				if (n.equals("name")){
+    					System.out.println(jsonReader.nextString());
+    				}
+    				if (n.equals("age")){
+    					System.out.println(jsonReader.nextInt());
+    				}
+    				if (n.equals("messages")){
+    					jsonReader.beginArray();
+    					while  (jsonReader.hasNext()) {
+    						System.out.println(jsonReader.nextString());
+    					}
+    					jsonReader.endArray();
+    				}
+    			}
+    			jsonReader.endObject();
+    		}
+
+    	}
+    	jsonReader.endObject();
+    }
 }
 
