@@ -4,7 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 import java.io.IOException; 
-import java.util.ArrayList; 
+import java.util.ArrayList;
+import java.util.Date;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -12,6 +13,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -36,7 +39,7 @@ public class Main {
 
 	private static final Logger LOGGER = LogManager.getLogger();
 
-    public static void main(String args[]) throws IOException {
+    public static void main(String args[]) throws IOException, ParseException {
 		LOGGER.log(Level.INFO, "New run");
     	
         String file = ".\\DodgyTransactions2015.csv";
@@ -53,10 +56,22 @@ public class Main {
         // CREATING EMPTY ACCOUNTS
         HashMap<String, HashMap<String, Float>> accounts = new HashMap<>();
         HashMap<String, List<String>> transactions = new HashMap<>();
-
+        
+        // ------ DATE FORMAT -------------
+        String pattern = "dd/mm/yyyy";
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+        
         for (CSVRecord csvRecord : csvParser) {
             // Accessing values by the names assigned to each column
-            String date = csvRecord.get("Date");
+        	Date date = simpleDateFormat.parse("00/00/0000");
+        	try {
+        		date = simpleDateFormat.parse(csvRecord.get("Date"));
+        	}
+        	catch (ParseException ParseE){
+            	ParseE.printStackTrace();
+            	LOGGER.log(Level.ERROR, "Could not get Date from: " + csvRecord.get("Date"));
+            	continue;
+        	}
             String from = csvRecord.get("From");
             String to = csvRecord.get("To");
             String narrative = csvRecord.get("Narrative");
@@ -68,7 +83,6 @@ public class Main {
             	LOGGER.log(Level.ERROR, "Could not get float from: " + csvRecord.get("Amount"));
             	continue;
             }
-            
             
             // Looking at From - this person OWES money
             if(accounts.containsKey(from)) {
