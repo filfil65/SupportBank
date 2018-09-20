@@ -3,17 +3,15 @@ package training.supportbank;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
-import java.util.StringTokenizer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException; 
 import java.util.ArrayList; 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -36,29 +34,22 @@ public class Main {
 //    	
 //	}
 
-    public static void main(String args[]) throws IOException {
-        // Your code here!
-        System.out.println("Test!");
-        
+	private static final Logger LOGGER = LogManager.getLogger();
 
-        
-//        String file = "C:\\Users\\fgajewski\\Desktop\\Java Training\\SupportBank\\Transactions2014.csv";
-//        //List<String[]> content = new ArrayList<>();
-//        HashMap<String, List<String>> content = new HashMap<>();
-//        BufferedReader br = new BufferedReader(new FileReader(file));
-        
-        String file = ".\\Transactions2014.csv";
+    public static void main(String args[]) throws IOException {
+		LOGGER.log(Level.INFO, "New run");
+    	
+        String file = ".\\DodgyTransactions2015.csv";
         Reader reader = Files.newBufferedReader(Paths.get(file));
-        //CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT);
         CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
                 .withFirstRecordAsHeader()
                 .withIgnoreHeaderCase()
                 .withTrim());
+        
         // Reading all records at once into memory
         //List<CSVRecord> csvRecords = csvParser.getRecords();
         //System.out.println(csvRecords);
-        
-
+               
         // CREATING EMPTY ACCOUNTS
         HashMap<String, HashMap<String, Float>> accounts = new HashMap<>();
         HashMap<String, List<String>> transactions = new HashMap<>();
@@ -69,7 +60,15 @@ public class Main {
             String from = csvRecord.get("From");
             String to = csvRecord.get("To");
             String narrative = csvRecord.get("Narrative");
-            Float amount = Float.parseFloat(csvRecord.get("Amount"));
+        	Float amount = 0f;
+            try {
+            	amount = Float.parseFloat(csvRecord.get("Amount"));
+            } catch (NumberFormatException nfe) {
+            	nfe.printStackTrace();
+            	LOGGER.log(Level.ERROR, "Could not get float from: " + csvRecord.get("Amount"));
+            	continue;
+            }
+            
             
             // Looking at From - this person OWES money
             if(accounts.containsKey(from)) {
@@ -77,22 +76,20 @@ public class Main {
             	accounts.get(from).put("Owes",  (accounts.get(from).get("Owes")+amount));
             	accounts.get(from).put("Balance",  (accounts.get(from).get("Balance")-amount));
             	//Add transaction
-            	transactions.get(from).add("Owes £"+amount+" to "+to+" for "+narrative+", "+date);
+            	transactions.get(from).add(date + ": Owes £"+amount+" to "+to+" for "+narrative);
             }
             else {
             	//Add new name and new hashmap list
-            	HashMap<String, Float> balanceList = new HashMap<String, Float>() {{
-            		put("Owed", 0.00f);
-            		put("Owes", amount);
-            		put("Balance", amount);
-            	}};
+            	HashMap<String, Float> balanceList = new HashMap<String, Float>();
+        		balanceList.put("Owed", 0.00f);
+        		balanceList.put("Owes", amount);
+        		balanceList.put("Balance", -amount);
             	accounts.put(from,balanceList);
             	//Add new array and transaction
             	ArrayList<String> transactionList = new ArrayList<>();
-            	transactionList.add("Owes £"+amount+" to "+to+" for "+narrative+", "+date);
+            	transactionList.add(date + ": Owes £"+amount+" to "+to+" for "+narrative);
             	transactions.put(from, transactionList);
             }
-
 
             // Looking at To - this person is OWED money
             if(accounts.containsKey(to)) { // To person is present in the account list
@@ -100,60 +97,22 @@ public class Main {
             	accounts.get(to).put("Owed",  (accounts.get(to).get("Owed")+amount));
             	accounts.get(to).put("Balance",  (accounts.get(to).get("Balance")+amount));
             	//Add transaction
-            	transactions.get(to).add("Is owed £"+amount+" by "+from+" for "+narrative+", "+date);
+            	transactions.get(to).add(date + ": Is owed £"+amount+" by "+from+" for "+narrative);
             }
             else {  // To person is NOT present in the account list
             	//Add new name and new hashmap list
-            	HashMap<String, Float> balanceList = new HashMap<String, Float>() {{
-            		put("Owed", amount);
-            		put("Owes", 0.00f);
-            		put("Balance", amount);
-            	}};
+            	HashMap<String, Float> balanceList = new HashMap<String, Float>();
+        		balanceList.put("Owed", amount);
+        		balanceList.put("Owes", 0.00f);
+        		balanceList.put("Balance", amount);
             	accounts.put(to,balanceList);
             	//Add new array and transaction
             	ArrayList<String> transactionList = new ArrayList<>();
-            	transactionList.add("Is owed £"+amount+" by "+from+" for "+narrative+", "+date);
+            	transactionList.add(date + ": Is owed £"+amount+" by "+from+" for "+narrative);
             	transactions.put(to, transactionList);
             }
-            
-            
-            
-            
-           
-            
-
-//            // OBSELETE - printing each row from CSV
-//            System.out.println(csvRecord);
-//            System.out.println("Record No - " + csvRecord.getRecordNumber());
-//            System.out.println("---------------");
-//            System.out.println("Date : " + date);
-//            System.out.println("From : " + from);
-//            System.out.println("To : " + to);
-//            System.out.println("Narrative : " + narrative);
-//            System.out.println("Amount : " + amount);
-//            System.out.println("---------------\n\n");
         } //End of For Loop
-        
-        
-        
-//        // print out hashMaps
-//        System.out.println(accounts.entrySet());
-//        
-//        for (String key : transactions.keySet()) {
-//        	System.out.println("--------------");
-//        	System.out.println(key);
-//        	System.out.println(accounts.get(key));        	
-//        	transactions.get(key).stream().forEach(System.out::println);
-//        	System.out.println("--------------\n\n");
-//        }
-//        
 
-        
-        
-        
-
-        
-        
         
 //        -------------WHILE LOOP ------------------
         String userEntry = "";
@@ -197,10 +156,11 @@ public class Main {
     			}
     			else {
     				System.out.println("No such account");
+    				LOGGER.log(Level.WARN, "No accout with name: " + userEntry);
     				userEntry = "List Account";
     			}
     		}
-        }
+        } //End of While Loop
     		
     }
     
